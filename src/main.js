@@ -90,6 +90,9 @@ class Game {
 
 		// Setup event listeners for enhanced horror experience
 		this.setupEventListeners();
+		
+		// Setup story events
+		this.systems.eventSystem.setupStoryEvents(this.systems);
 	}
 
 	/**
