@@ -108,11 +108,13 @@ export class PlayerController {
             moving = true;
         }
         if (this.keys['a']) {
-            moveVector.subtractInPlace(this.camera.getRightVector());
+            const rightVector = new Vector3(Math.cos(this.camera.rotation.y + Math.PI/2), 0, Math.sin(this.camera.rotation.y + Math.PI/2));
+            moveVector.subtractInPlace(rightVector);
             moving = true;
         }
         if (this.keys['d']) {
-            moveVector.addInPlace(this.camera.getRightVector());
+            const rightVector = new Vector3(Math.cos(this.camera.rotation.y + Math.PI/2), 0, Math.sin(this.camera.rotation.y + Math.PI/2));
+            moveVector.addInPlace(rightVector);
             moving = true;
         }
         

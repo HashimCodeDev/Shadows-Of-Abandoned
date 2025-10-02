@@ -1,4 +1,5 @@
 import { Vector3, MeshBuilder, StandardMaterial, Color3, Texture } from '@babylonjs/core';
+import { LevelBuilder } from './LevelBuilder.js';
 
 export class SceneManager {
     constructor(scene, systems) {
@@ -6,6 +7,7 @@ export class SceneManager {
         this.systems = systems;
         this.currentScene = null;
         this.sceneData = new Map();
+        this.levelBuilder = new LevelBuilder(scene, systems);
         
         this.initializeScenes();
     }
@@ -14,57 +16,92 @@ export class SceneManager {
         // Define scene layouts and content
         this.sceneData.set('asylum_entrance', {
             name: 'Asylum Entrance',
-            playerStart: new Vector3(0, 1.8, -5),
-            environment: 'entrance_hall',
-            lighting: 'dim',
+            playerStart: new Vector3(0, 1.8, -8),
+            environment: 'full_asylum',
+            lighting: 'atmospheric',
             interactables: [
-                { type: 'note', position: new Vector3(2, 1, 0), data: { 
-                    title: 'Patient Log - Day 1',
-                    content: 'The new treatment shows promise. Subjects report vivid hallucinations but remain docile. Dr. Hartwell believes we are close to a breakthrough in consciousness manipulation.'
+                { type: 'note', position: new Vector3(8, 1, -5), data: { 
+                    title: 'Admission Log - Final Entry',
+                    content: 'October 15th, 1973: Last patient admitted before the incident. Dr. Hartwell\'s experimental treatments have shown disturbing side effects. Patients report seeing shadows that move independently of light sources.'
                 }},
-                { type: 'key', position: new Vector3(-3, 1, 2), data: { id: 'office_key', name: 'Office Key' }},
-                { type: 'door', position: new Vector3(0, 0, 10), data: { locked: true, keyId: 'office_key', targetScene: 'main_corridor' }}
+                { type: 'key', position: new Vector3(-6, 1, 3), data: { id: 'corridor_key', name: 'Corridor Access Key' }},
+                { type: 'note', position: new Vector3(3, 1, 8), data: {
+                    title: 'Security Report',
+                    content: 'Multiple power outages reported in Wing C. Maintenance unable to locate source. Staff reporting unexplained sounds and temperature drops in affected areas.'
+                }},
+                { type: 'door', position: new Vector3(0, 0, 18), data: { locked: true, keyId: 'corridor_key', targetScene: 'main_corridor' }}
             ],
             triggers: [
-                { position: new Vector3(0, 0, 5), radius: 2, event: 'area_entered', data: { area: 'entrance' }}
+                { position: new Vector3(0, 0, 0), radius: 3, event: 'area_entered', data: { area: 'entrance' }},
+                { position: new Vector3(5, 0, 5), radius: 2, event: 'whisper_sound', data: { intensity: 1 }}
             ]
         });
         
         this.sceneData.set('main_corridor', {
             name: 'Main Corridor',
-            playerStart: new Vector3(0, 1.8, -8),
-            environment: 'long_corridor',
-            lighting: 'flickering',
+            playerStart: new Vector3(0, 1.8, 0),
+            environment: 'full_asylum',
+            lighting: 'atmospheric',
             interactables: [
-                { type: 'note', position: new Vector3(5, 1, 0), data: {
-                    title: 'Research Notes - Dr. Hartwell',
-                    content: 'Day 47: The subjects have begun to change. Something is wrong. They speak of shadows that move independently, of whispers in empty rooms. I fear we have opened a door that should have remained closed.'
+                { type: 'note', position: new Vector3(-1.5, 1, 25), data: {
+                    title: 'Dr. Hartwell\'s Journal - Day 47',
+                    content: 'The subjects have begun to change. They speak of shadows that move independently, of whispers in empty rooms. The entity grows stronger with each passing day. I fear we have opened a door that should have remained closed forever.'
                 }},
-                { type: 'switch', position: new Vector3(-4, 1.5, 3), data: { id: 'corridor_lights', controls: 'lighting' }},
-                { type: 'door', position: new Vector3(0, 0, 15), data: { locked: false, targetScene: 'restricted_area' }}
+                { type: 'key', position: new Vector3(1.2, 1, 35), data: { id: 'research_key', name: 'Research Wing Key' }},
+                { type: 'switch', position: new Vector3(-1.8, 1.5, 15), data: { id: 'corridor_lights', controls: 'lighting' }},
+                { type: 'note', position: new Vector3(1.5, 1, 45), data: {
+                    title: 'Maintenance Log',
+                    content: 'Electrical systems failing throughout the facility. Lights flicker without cause. Temperature sensors reading impossible values. Recommend immediate evacuation.'
+                }},
+                { type: 'door', position: new Vector3(0, 0, 58), data: { locked: true, keyId: 'research_key', targetScene: 'research_wing' }}
             ],
             triggers: [
-                { position: new Vector3(0, 0, 0), radius: 3, event: 'entity_encounter', data: { intensity: 1 }},
-                { position: new Vector3(0, 0, 10), radius: 2, event: 'area_entered', data: { area: 'corridor' }}
+                { position: new Vector3(0, 0, 10), radius: 2, event: 'entity_encounter', data: { intensity: 1 }},
+                { position: new Vector3(0, 0, 30), radius: 2, event: 'lights_flicker', data: {} },
+                { position: new Vector3(0, 0, 40), radius: 2, event: 'entity_encounter', data: { intensity: 2 }}
             ]
         });
         
-        this.sceneData.set('restricted_area', {
+        this.sceneData.set('research_wing', {
             name: 'Restricted Research Wing',
-            playerStart: new Vector3(0, 1.8, -5),
-            environment: 'research_wing',
-            lighting: 'emergency',
+            playerStart: new Vector3(0, 1.8, 62),
+            environment: 'full_asylum',
+            lighting: 'atmospheric',
             interactables: [
-                { type: 'note', position: new Vector3(3, 1, 5), data: {
+                { type: 'note', position: new Vector3(-8, 1, 68), data: {
                     title: 'FINAL LOG - EVACUATION ORDER',
-                    content: 'Day 73: IMMEDIATE EVACUATION ORDERED. The entity has manifested. It feeds on light, grows stronger in darkness. All personnel must evacuate immediately. May God forgive us for what we have unleashed.'
+                    content: 'Day 73: IMMEDIATE EVACUATION ORDERED. The entity has fully manifested. It feeds on electrical energy, grows stronger in darkness. All research data must be destroyed. May God forgive us for what we have unleashed upon this world.'
                 }},
-                { type: 'generator', position: new Vector3(-5, 0, 8), data: { id: 'main_generator', powers: 'exit_lighting' }},
-                { type: 'door', position: new Vector3(0, 0, 12), data: { locked: true, keyId: 'exit_key', targetScene: 'exit' }}
+                { type: 'note', position: new Vector3(10, 1, 72), data: {
+                    title: 'Experiment Log - Subject 23',
+                    content: 'Subject shows complete neural restructuring. Consciousness appears to exist partially outside physical form. Entity attachment confirmed. Termination of experiment recommended immediately.'
+                }},
+                { type: 'key', position: new Vector3(-12, 1, 75), data: { id: 'basement_key', name: 'Basement Access Key' }},
+                { type: 'generator', position: new Vector3(8, 0, 78), data: { id: 'main_generator', powers: 'facility_lighting' }},
+                { type: 'door', position: new Vector3(0, 0, 85), data: { locked: true, keyId: 'basement_key', targetScene: 'basement' }}
             ],
             triggers: [
-                { position: new Vector3(0, 0, 0), radius: 5, event: 'area_entered', data: { area: 'restricted' }},
-                { position: new Vector3(-2, 0, 6), radius: 2, event: 'entity_encounter', data: { intensity: 3 }}
+                { position: new Vector3(0, 0, 65), radius: 4, event: 'area_entered', data: { area: 'research_wing' }},
+                { position: new Vector3(-5, 0, 70), radius: 2, event: 'entity_encounter', data: { intensity: 3 }},
+                { position: new Vector3(5, 0, 80), radius: 2, event: 'generator_proximity', data: {} }
+            ]
+        });
+        
+        this.sceneData.set('basement', {
+            name: 'Basement - The Source',
+            playerStart: new Vector3(0, -2.2, 80),
+            environment: 'full_asylum',
+            lighting: 'atmospheric',
+            interactables: [
+                { type: 'note', position: new Vector3(-6, -3, 85), data: {
+                    title: 'The Truth - Dr. Hartwell\'s Final Words',
+                    content: 'The entity was never created by our experiments. We merely provided it a doorway into our reality. It has existed in the spaces between consciousness and matter for eons. Our research only gave it form. The only way to stop it is to sever its connection to this place. The generator must be destroyed.'
+                }},
+                { type: 'switch', position: new Vector3(0, -3, 88), data: { id: 'entity_banishment', controls: 'final_sequence' }}
+            ],
+            triggers: [
+                { position: new Vector3(0, -4, 82), radius: 3, event: 'area_entered', data: { area: 'basement' }},
+                { position: new Vector3(0, -4, 85), radius: 2, event: 'entity_encounter', data: { intensity: 4, final: true }}
             ]
         });
     }
@@ -110,20 +147,22 @@ export class SceneManager {
     }
     
     async loadEnvironment(environmentType) {
-        // Create basic environment geometry
-        switch (environmentType) {
-            case 'entrance_hall':
-                await this.createEntranceHall();
-                break;
-            case 'long_corridor':
-                await this.createLongCorridor();
-                break;
-            case 'research_wing':
-                await this.createResearchWing();
-                break;
-            default:
-                await this.createBasicRoom();
+        // Create comprehensive asylum environment
+        if (environmentType === 'full_asylum') {
+            await this.createFullAsylum();
+        } else {
+            // Fallback to basic room
+            await this.createBasicRoom();
         }
+    }
+    
+    async createFullAsylum() {
+        // Create the complete asylum level using LevelBuilder
+        this.levelBuilder.createAsylumEntrance();
+        this.levelBuilder.createMainCorridor();
+        this.levelBuilder.createPatientRooms();
+        this.levelBuilder.createResearchWing();
+        this.levelBuilder.createBasement();
     }
     
     async createEntranceHall() {
@@ -334,12 +373,11 @@ export class SceneManager {
     }
     
     clearScene() {
-        // Dispose of scene-specific meshes and materials
-        this.scene.meshes.forEach(mesh => {
-            if (mesh.name !== 'playerCamera' && !mesh.name.includes('flashlight')) {
-                mesh.dispose();
-            }
-        });
+        // Dispose of level builder resources
+        if (this.levelBuilder) {
+            this.levelBuilder.dispose();
+            this.levelBuilder = new LevelBuilder(this.scene, this.systems);
+        }
         
         // Clear interactables
         this.systems.interactionManager.dispose();

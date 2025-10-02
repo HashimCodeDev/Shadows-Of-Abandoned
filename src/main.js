@@ -55,12 +55,92 @@ class Game {
         window.addEventListener('resize', () => {
             this.engine.resize();
         });
+        
+        // Setup event listeners for enhanced horror experience
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        // Entity encounter events
+        this.systems.eventSystem.on('entity_encounter', (data) => {
+            this.systems.environmentManager.flickerLights();
+            this.systems.audioManager.triggerEntityEncounter(data.intensity, data.position);
+        });
+        
+        // Document discovery events
+        this.systems.eventSystem.on('document_found', (data) => {
+            console.log(`Document discovered: ${data.title}`);
+        });
+        
+        // Area transition events
+        this.systems.eventSystem.on('area_entered', (data) => {
+            console.log(`Entered area: ${data.area}`);
+            
+            // Trigger area-specific effects
+            if (data.area === 'basement') {
+                this.systems.environmentManager.startEntityPursuit();
+            }
+        });
+        
+        // Key collection events
+        this.systems.eventSystem.on('key_collected', (data) => {
+            console.log(`Key collected: ${data.keyName}`);
+        });
+        
+        // Generator and power events
+        this.systems.eventSystem.on('generator_activated', (data) => {
+            if (data.powers === 'facility_lighting') {
+                this.systems.environmentManager.restorePower();
+            }
+        });
+        
+        // Final sequence events
+        this.systems.eventSystem.on('switch_activated', (data) => {
+            if (data.controls === 'final_sequence') {
+                this.startFinalSequence();
+            }
+        });
+    }
+    
+    startFinalSequence() {
+        console.log('Starting final sequence...');
+        
+        // Dramatic lighting and audio
+        this.systems.environmentManager.startChaseSequence();
+        this.systems.audioManager.playAmbient('entity_pursuit');
+        
+        // Show final message after delay
+        setTimeout(() => {
+            this.showGameComplete();
+        }, 10000);
+    }
+    
+    showGameComplete() {
+        const overlay = document.createElement('div');
+        overlay.className = 'document-overlay';
+        overlay.innerHTML = `
+            <div class="document-content">
+                <div class="document-header">
+                    <h3>Entity Contained</h3>
+                </div>
+                <div class="document-body">
+                    <p>The generator has been destroyed. The entity's connection to this reality has been severed.</p>
+                    <p>The asylum falls silent once more, its dark secrets buried beneath the rubble.</p>
+                    <p>You have survived the Shadows of the Abandoned.</p>
+                </div>
+                <div class="document-footer">
+                    <button onclick="location.reload()" style="background: #ff6b6b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Play Again</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
     }
     
     setupCamera() {
         this.camera = new FreeCamera('playerCamera', new Vector3(0, 1.8, -5), this.scene);
         this.camera.setTarget(Vector3.Zero());
-        this.camera.attachControls(this.canvas, true);
+
         
         // Camera settings for horror atmosphere
         this.camera.fov = 0.8;
@@ -82,8 +162,58 @@ class Game {
                 system.update(deltaTime);
             }
         });
+        
+        // Update UI elements
+        this.updateUI();
+    }
+    
+    updateUI() {
+        // Update HUD elements
+        const batteryElement = document.getElementById('battery');
+        const documentsElement = document.getElementById('documents');
+        const keysElement = document.getElementById('keys');
+        const areaElement = document.getElementById('area');
+        
+        if (this.systems.playerController && batteryElement) {
+            batteryElement.textContent = `${Math.floor(this.systems.playerController.batteryLevel || 100)}%`;
+        }
+        
+        if (this.systems.interactionManager) {
+            if (documentsElement) {
+                documentsElement.textContent = (this.systems.interactionManager.documentsFound || []).length.toString();
+            }
+            if (keysElement) {
+                keysElement.textContent = (this.systems.interactionManager.inventory || new Map()).size.toString();
+            }
+        }
+        
+        if (this.systems.sceneManager && areaElement) {
+            const currentScene = this.systems.sceneManager.getCurrentScene();
+            const sceneNames = {
+                'asylum_entrance': 'Entrance Hall',
+                'main_corridor': 'Main Corridor',
+                'research_wing': 'Research Wing',
+                'basement': 'Basement'
+            };
+            areaElement.textContent = sceneNames[currentScene] || 'Unknown Area';
+        }
     }
 }
 
-// Start the game
-new Game();
+// Initialize game when page loads
+window.addEventListener('DOMContentLoaded', () => {
+    // Hide loading screen after a delay
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loadingScreen');
+        const clickToStart = document.getElementById('clickToStart');
+        
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        if (clickToStart) clickToStart.style.display = 'flex';
+    }, 2000);
+    
+    // Start game when user clicks
+    document.getElementById('clickToStart')?.addEventListener('click', () => {
+        document.getElementById('clickToStart').style.display = 'none';
+        new Game();
+    });
+});
