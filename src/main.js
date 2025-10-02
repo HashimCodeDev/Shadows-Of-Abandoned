@@ -112,6 +112,11 @@ class Game {
 			console.log(`Document discovered: ${data.title}`);
 		});
 
+		// Note reading events
+		this.systems.eventSystem.on("note_read", (data) => {
+			this.showDocument(data.title, data.content);
+		});
+
 		// Area transition events
 		this.systems.eventSystem.on("area_entered", (data) => {
 			console.log(`Entered area: ${data.area}`);
@@ -153,6 +158,43 @@ class Game {
 		setTimeout(() => {
 			this.showGameComplete();
 		}, 10000);
+	}
+
+	showDocument(title, content) {
+		const overlay = document.createElement("div");
+		overlay.className = "document-overlay";
+		overlay.innerHTML = `
+            <div class="document-content">
+                <div class="document-header">
+                    <h3>${title}</h3>
+                    <span class="document-close">&times;</span>
+                </div>
+                <div class="document-body">
+                    <p>${content}</p>
+                </div>
+                <div class="document-footer">
+                    Press ESC or click X to close
+                </div>
+            </div>
+        `;
+
+		// Close handlers
+		const closeBtn = overlay.querySelector('.document-close');
+		closeBtn.onclick = () => overlay.remove();
+		overlay.onclick = (e) => {
+			if (e.target === overlay) overlay.remove();
+		};
+
+		// ESC key handler
+		const escHandler = (e) => {
+			if (e.key === 'Escape') {
+				overlay.remove();
+				document.removeEventListener('keydown', escHandler);
+			}
+		};
+		document.addEventListener('keydown', escHandler);
+
+		document.body.appendChild(overlay);
 	}
 
 	showGameComplete() {
