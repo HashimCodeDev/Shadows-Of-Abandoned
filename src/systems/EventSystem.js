@@ -192,9 +192,9 @@ export class EventSystem {
         const messageDiv = document.createElement('div');
         messageDiv.style.cssText = `
             position: absolute;
-            top: 50%;
+            bottom: 150px;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: rgba(0,0,0,0.8);
             color: #fff;
             padding: 20px;
