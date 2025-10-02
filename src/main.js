@@ -24,6 +24,7 @@ import { InteractionManager } from "./systems/InteractionManager.js";
 import { EventSystem } from "./systems/EventSystem.js";
 import { SceneManager } from "./systems/SceneManager.js";
 import { EnvironmentManager } from "./systems/EnvironmentManager.js";
+import { OpeningSequence } from "./systems/OpeningSequence.js";
 
 class Game {
 	constructor() {
@@ -64,6 +65,10 @@ class Game {
 			this.scene,
 			this.systems
 		);
+		this.systems.openingSequence = new OpeningSequence(
+			this.scene,
+			this.systems
+		);
 
 		// Setup camera
 		this.setupCamera();
@@ -77,6 +82,9 @@ class Game {
 
 		// Load initial scene
 		await this.systems.sceneManager.loadScene("horror_scene");
+
+		// Start opening sequence
+		this.systems.openingSequence.start();
 
 		// Start render loop
 		this.engine.runRenderLoop(() => {
