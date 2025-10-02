@@ -176,7 +176,7 @@ class Game {
                     <p>${content}</p>
                 </div>
                 <div class="document-footer">
-                    Press ESC or click X to close
+                    Press X to close
                 </div>
             </div>
         `;
@@ -187,15 +187,6 @@ class Game {
 		overlay.onclick = (e) => {
 			if (e.target === overlay) overlay.remove();
 		};
-
-		// ESC key handler
-		const escHandler = (e) => {
-			if (e.key === 'Escape') {
-				overlay.remove();
-				document.removeEventListener('keydown', escHandler);
-			}
-		};
-		document.addEventListener('keydown', escHandler);
 
 		document.body.appendChild(overlay);
 	}

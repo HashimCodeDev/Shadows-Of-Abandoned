@@ -113,6 +113,11 @@ export class AssetManager {
         return await this.loadModel('table', 'industrial_coffee_table_4k.gltf');
     }
     
+    async loadCorridorModel() {
+        // Load the horror corridor GLB model
+        return await this.loadModel('horror_corridor1', 'horror_corridor_1.glb');
+    }
+    
     createPlaceholderMaterial() {
         const material = new StandardMaterial('placeholder', this.scene);
         material.diffuseColor = new Color3(0.5, 0.5, 0.5);
