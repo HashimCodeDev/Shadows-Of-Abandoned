@@ -13,8 +13,11 @@ export class AssetManager {
         }
         
         try {
-            const result = await SceneLoader.ImportMeshAsync('', 'assets/models/', path, this.scene);
+            // Load model without textures first to avoid 404 errors
+            const result = await SceneLoader.ImportMeshAsync('', 'assets/models/', path, this.scene, null, null, null, '.gltf');
             this.loadedAssets.set(name, result);
+            
+            console.log(`Model ${name} loaded successfully with ${result.meshes.length} meshes`);
             
             // Setup collisions for imported meshes
             result.meshes.forEach(mesh => {
@@ -24,6 +27,10 @@ export class AssetManager {
                 } else {
                     // Enable collisions for furniture
                     mesh.checkCollisions = true;
+                    // Apply basic material if textures failed
+                    if (!mesh.material || mesh.material.diffuseTexture?.hasAlpha === undefined) {
+                        mesh.material = this.createPlaceholderMaterial();
+                    }
                 }
             });
             
@@ -36,14 +43,23 @@ export class AssetManager {
     
     async createModelInstance(modelName, position, rotation = null, scale = null) {
         const modelData = this.loadedAssets.get(modelName);
+        console.log(`Creating instance for model: ${modelName}`, modelData ? 'Model found' : 'Model not found');
+        
         if (!modelData) {
             console.warn(`Model ${modelName} not loaded`);
             return null;
         }
         
+        console.log('Model meshes:', modelData.meshes.map(m => m.name));
+        
         // Clone the first mesh as instance
-        const originalMesh = modelData.meshes.find(m => m.geometry);
-        if (!originalMesh) return null;
+        const originalMesh = modelData.meshes.find(m => m.geometry) || modelData.meshes[0];
+        if (!originalMesh) {
+            console.warn('No suitable mesh found for instancing');
+            return null;
+        }
+        
+        console.log('Using mesh for instance:', originalMesh.name);
         
         const instance = originalMesh.createInstance(`${modelName}_instance_${Date.now()}`);
         instance.position.copyFrom(position);
@@ -57,6 +73,7 @@ export class AssetManager {
         }
         
         instance.checkCollisions = true;
+        console.log('Model instance created at position:', instance.position);
         return instance;
     }
     

@@ -14,10 +14,17 @@ export class LevelBuilder {
     }
     
     async loadModels() {
-        // Load the table GLTF model
-        await this.systems.assetManager.loadTableModel();
-        this.modelsLoaded = true;
-        console.log('GLTF models loaded successfully');
+        if (this.modelsLoaded) return;
+        
+        try {
+            // Load the table GLTF model
+            await this.systems.assetManager.loadTableModel();
+            this.modelsLoaded = true;
+            console.log('GLTF models loaded successfully');
+        } catch (error) {
+            console.warn('Failed to load GLTF models, using placeholders:', error);
+            this.modelsLoaded = false;
+        }
     }
     
     initializeMaterials() {
@@ -362,16 +369,22 @@ export class LevelBuilder {
     }
     
     createTable(position, rotation = null, scale = null) {
+        console.log(`Creating table at position:`, position, `Models loaded: ${this.modelsLoaded}`);
+        
         if (this.modelsLoaded) {
             // Use GLTF table model
             const tableInstance = this.systems.assetManager.createModelInstance('table', position, rotation, scale);
             if (tableInstance) {
+                console.log('GLTF table instance created successfully');
                 this.meshes.push(tableInstance);
                 return tableInstance;
+            } else {
+                console.warn('Failed to create GLTF table instance, using fallback');
             }
         }
         
         // Fallback to placeholder if model not loaded
+        console.log('Using placeholder table');
         const table = this.createProp(`table_${Date.now()}`, { width: 2, height: 0.8, depth: 1.2 }, position, 'wood_old');
         if (rotation) table.rotation.copyFrom(rotation);
         if (scale) table.scaling.copyFrom(scale);

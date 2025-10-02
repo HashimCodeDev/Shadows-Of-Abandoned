@@ -157,6 +157,9 @@ export class SceneManager {
     }
     
     async createFullAsylum() {
+        // Wait for models to load before creating asylum
+        await this.levelBuilder.loadModels();
+        
         // Create the complete asylum level using LevelBuilder
         this.levelBuilder.createAsylumEntrance();
         this.levelBuilder.createMainCorridor();
