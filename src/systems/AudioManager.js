@@ -152,24 +152,23 @@ export class AudioManager {
     }
     
     createProceduralSound(name) {
-        // Create mock sound object for procedural audio
         const soundConfig = {
-            'footstep_concrete': { duration: 0.2, frequency: 200 },
-            'door_creak': { duration: 1.5, frequency: 150 },
-            'door_locked': { duration: 0.5, frequency: 300 },
-            'door_slam': { duration: 0.8, frequency: 80 },
-            'flashlight_click': { duration: 0.1, frequency: 800 },
-            'paper_rustle': { duration: 0.6, frequency: 2000 },
-            'key_pickup': { duration: 0.3, frequency: 1200 },
-            'switch_flip': { duration: 0.2, frequency: 400 },
-            'generator_start': { duration: 2.0, frequency: 60 },
-            'entity_whisper': { duration: 2.5, frequency: 100 },
-            'entity_growl': { duration: 1.8, frequency: 40 },
-            'heartbeat': { duration: 1.0, frequency: 80 },
-            'static': { duration: 0.5, frequency: 5000 }
+            'footstep_concrete': { duration: 0.2, frequency: 200, type: 'noise' },
+            'door_creak': { duration: 1.5, frequency: 150, type: 'sweep' },
+            'door_locked': { duration: 0.5, frequency: 300, type: 'click' },
+            'door_slam': { duration: 0.8, frequency: 80, type: 'thump' },
+            'flashlight_click': { duration: 0.1, frequency: 800, type: 'click' },
+            'paper_rustle': { duration: 0.6, frequency: 2000, type: 'noise' },
+            'key_pickup': { duration: 0.3, frequency: 1200, type: 'chime' },
+            'switch_flip': { duration: 0.2, frequency: 400, type: 'click' },
+            'generator_start': { duration: 2.0, frequency: 60, type: 'rumble' },
+            'entity_whisper': { duration: 2.5, frequency: 100, type: 'whisper' },
+            'entity_growl': { duration: 1.8, frequency: 40, type: 'growl' },
+            'heartbeat': { duration: 1.0, frequency: 80, type: 'pulse' },
+            'static': { duration: 0.5, frequency: 5000, type: 'static' }
         };
         
-        const config = soundConfig[name] || { duration: 0.5, frequency: 440 };
+        const config = soundConfig[name] || { duration: 0.5, frequency: 440, type: 'tone' };
         
         return {
             name,
@@ -179,10 +178,27 @@ export class AudioManager {
             setVolume: function(vol) { this.volume = vol; },
             setPosition: function(pos) { this.position = pos; },
             play: function() { 
-                console.log(`Playing procedural sound: ${this.name} (${this.config.frequency}Hz, ${this.config.duration}s)`); 
+                this.generateSound();
             },
-            stop: function() { 
-                console.log(`Stopping sound: ${this.name}`); 
+            stop: function() {},
+            generateSound: function() {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.setValueAtTime(this.config.frequency, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(this.volume * 0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + this.config.duration);
+                    
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + this.config.duration);
+                } catch (e) {
+                    console.log(`Audio: ${this.name}`);
+                }
             },
             dispose: function() {}
         };

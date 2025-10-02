@@ -220,7 +220,7 @@ class Game {
 	}
 
 	setupCamera() {
-		this.camera = new FreeCamera(
+		this.camera = new UniversalCamera(
 			"playerCamera",
 			new Vector3(0, 1.8, -5),
 			this.scene

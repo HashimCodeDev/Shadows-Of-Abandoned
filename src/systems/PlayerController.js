@@ -121,9 +121,15 @@ export class PlayerController {
         if (moving) {
             moveVector.normalize();
             moveVector.scaleInPlace(this.moveSpeed * deltaTime);
-            moveVector.y = 0; // Prevent flying
+            moveVector.y = 0;
             
-            this.camera.position.addInPlace(moveVector);
+            const newPos = this.camera.position.add(moveVector);
+            const ray = new Ray(this.camera.position, moveVector.normalize());
+            const hit = this.scene.pickWithRay(ray, (mesh) => mesh.checkCollisions);
+            
+            if (!hit.hit || hit.distance > moveVector.length()) {
+                this.camera.position.copyFrom(newPos);
+            }
         }
         
         this.isMoving = moving;
