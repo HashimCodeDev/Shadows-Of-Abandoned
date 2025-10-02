@@ -75,7 +75,7 @@ class Game {
 		);
 
 		// Load initial scene
-		await this.systems.sceneManager.loadScene("asylum_entrance");
+		await this.systems.sceneManager.loadScene("horror_scene");
 
 		// Start render loop
 		this.engine.runRenderLoop(() => {
@@ -90,7 +90,7 @@ class Game {
 
 		// Setup event listeners for enhanced horror experience
 		this.setupEventListeners();
-		
+
 		// Setup story events
 		this.systems.eventSystem.setupStoryEvents(this.systems);
 	}
@@ -182,7 +182,7 @@ class Game {
         `;
 
 		// Close handlers
-		const closeBtn = overlay.querySelector('.document-close');
+		const closeBtn = overlay.querySelector(".document-close");
 		closeBtn.onclick = () => overlay.remove();
 		overlay.onclick = (e) => {
 			if (e.target === overlay) overlay.remove();
@@ -216,7 +216,7 @@ class Game {
 	setupCamera() {
 		this.camera = new UniversalCamera(
 			"playerCamera",
-			new Vector3(0, 1.8, -5),
+			new Vector3(0, 5, -5),
 			this.scene
 		);
 		this.camera.setTarget(Vector3.Zero());

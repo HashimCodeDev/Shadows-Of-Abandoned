@@ -21,9 +21,18 @@ export class SceneManager {
 
 	initializeScenes() {
 		// Define scene layouts and content
+		// Initial horror scene
+		this.sceneData.set("horror_scene", {
+			name: "Horror Scene",
+			playerStart: new Vector3(0, 5, 0),
+			environment: "horror_scene_glb",
+			lighting: "atmospheric",
+			interactables: [],
+			triggers: [],
+		});
 		this.sceneData.set("asylum_entrance", {
 			name: "Asylum Entrance",
-			playerStart: new Vector3(0, 1.8, -8),
+			playerStart: new Vector3(0, 5, -8),
 			environment: "full_asylum",
 			lighting: "atmospheric",
 			interactables: [
@@ -293,25 +302,88 @@ export class SceneManager {
 		// Create comprehensive asylum environment
 		if (environmentType === "full_asylum") {
 			await this.createFullAsylum();
+		} else if (environmentType === "horror_scene_glb") {
+			await this.loadHorrorSceneGLB();
 		} else {
 			// Fallback to basic room
 			await this.createBasicRoom();
 		}
 	}
 
+	async loadHorrorSceneGLB() {
+		return new Promise((resolve, reject) => {
+			SceneLoader.Append(
+				"/assets/models/",
+				"horror_corridor_1.glb",
+				this.scene,
+				() => {
+					console.log("Horror scene GLB loaded");
+					this.scene.getEngine().hideLoadingUI();
+					resolve();
+				},
+				null,
+				(error) => {
+					console.error("Failed to load horror_scene.glb:", error);
+					this.scene.getEngine().hideLoadingUI();
+					reject(error);
+				}
+			);
+		});
+	}
+
 	async createFullAsylum() {
-		// Wait for models to load before creating asylum
-		await this.levelBuilder.loadModels();
+		// Create procedural asylum environment
+		this.createAsylumCorridor();
+		this.scene.getEngine().hideLoadingUI();
+	}
 
-		// Create the complete asylum level using LevelBuilder
-		this.levelBuilder.createAsylumEntrance();
-		this.levelBuilder.createMainCorridor();
-		this.levelBuilder.createPatientRooms();
-		this.levelBuilder.createResearchWing();
-		this.levelBuilder.createBasement();
+	createAsylumCorridor() {
+		// Floor
+		const floor = MeshBuilder.CreateGround(
+			"floor",
+			{ width: 20, height: 100 },
+			this.scene
+		);
+		floor.position.y = 0;
+		floor.checkCollisions = true;
+		const floorMaterial = new StandardMaterial("floorMaterial", this.scene);
+		floorMaterial.diffuseColor = new Color3(0.2, 0.2, 0.2);
+		floor.material = floorMaterial;
 
-		// Add horror corridor to main corridor scene (non-blocking)
-		this.addHorrorCorridor();
+		// Walls
+		for (let i = 0; i < 10; i++) {
+			const leftWall = MeshBuilder.CreateBox(
+				"leftWall" + i,
+				{ width: 1, height: 4, depth: 10 },
+				this.scene
+			);
+			leftWall.position = new Vector3(-10, 2, i * 10);
+			leftWall.checkCollisions = true;
+			const rightWall = MeshBuilder.CreateBox(
+				"rightWall" + i,
+				{ width: 1, height: 4, depth: 10 },
+				this.scene
+			);
+			rightWall.position = new Vector3(10, 2, i * 10);
+			rightWall.checkCollisions = true;
+
+			const wallMaterial = new StandardMaterial("wallMaterial" + i, this.scene);
+			wallMaterial.diffuseColor = new Color3(0.4, 0.4, 0.4);
+			leftWall.material = wallMaterial;
+			rightWall.material = wallMaterial;
+		}
+
+		// Ceiling
+		const ceiling = MeshBuilder.CreateGround(
+			"ceiling",
+			{ width: 20, height: 100 },
+			this.scene
+		);
+		ceiling.position.y = 4;
+		ceiling.rotation.z = Math.PI;
+		const ceilingMaterial = new StandardMaterial("ceilingMaterial", this.scene);
+		ceilingMaterial.diffuseColor = new Color3(0.3, 0.3, 0.3);
+		ceiling.material = ceilingMaterial;
 	}
 
 	addHorrorCorridor() {
