@@ -15,11 +15,52 @@ export class EnvironmentManager {
     }
     
     setupBasicLighting() {
-        // Very dim ambient light
+        // Very dim ambient light for horror atmosphere
         const ambient = new HemisphericLight('ambient', new Vector3(0, 1, 0), this.scene);
-        ambient.intensity = 0.1;
-        ambient.diffuse = new Color3(0.4, 0.4, 0.5);
+        ambient.intensity = 0.05;
+        ambient.diffuse = new Color3(0.3, 0.3, 0.4);
         this.lights.push(ambient);
+        
+        // Add atmospheric corridor lighting
+        this.setupAtmosphericLighting();
+    }
+    
+    setupAtmosphericLighting() {
+        // Corridor emergency lights
+        const corridorPositions = [
+            new Vector3(0, 3.5, 5),
+            new Vector3(0, 3.5, 15),
+            new Vector3(0, 3.5, 25),
+            new Vector3(0, 3.5, 35)
+        ];
+        
+        corridorPositions.forEach((pos, index) => {
+            const light = new SpotLight(`corridor_${index}`, 
+                pos, 
+                new Vector3(0, -1, 0), 
+                Math.PI / 6, 2, this.scene);
+            light.intensity = 0.15;
+            light.diffuse = new Color3(0.8, 0.7, 0.5);
+            light.range = 12;
+            this.lights.push(light);
+            
+            // Add subtle flickering
+            if (Math.random() > 0.5) {
+                this.addSubtleFlicker(light);
+            }
+        });
+    }
+    
+    addSubtleFlicker(light) {
+        const originalIntensity = light.intensity;
+        setInterval(() => {
+            if (Math.random() < 0.1) {
+                light.intensity = originalIntensity * (0.5 + Math.random() * 0.5);
+                setTimeout(() => {
+                    light.intensity = originalIntensity;
+                }, 100 + Math.random() * 200);
+            }
+        }, 2000 + Math.random() * 3000);
     }
     
     setupDimLighting() {
@@ -178,11 +219,13 @@ export class EnvironmentManager {
     }
     
     createFogEffect() {
-        // Simple fog using scene fog
+        // Enhanced fog for horror atmosphere
         this.scene.fogEnabled = true;
         this.scene.fogMode = 3; // FOGMODE_EXP2
-        this.scene.fogColor = new Color3(0.1, 0.1, 0.15);
-        this.scene.fogDensity = 0.02;
+        this.scene.fogColor = new Color3(0.08, 0.08, 0.12);
+        this.scene.fogDensity = 0.015;
+        this.scene.fogStart = 5.0;
+        this.scene.fogEnd = 30.0;
     }
     
     restorePower() {

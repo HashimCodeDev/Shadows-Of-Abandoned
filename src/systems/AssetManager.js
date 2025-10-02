@@ -13,23 +13,39 @@ export class AssetManager {
         }
         
         try {
-            // Load model without textures first to avoid 404 errors
-            const result = await SceneLoader.ImportMeshAsync('', 'assets/models/', path, this.scene, null, null, null, '.gltf');
+            // Load model with proper path handling
+            const result = await SceneLoader.ImportMeshAsync('', '/assets/models/', path, this.scene);
             this.loadedAssets.set(name, result);
             
             console.log(`Model ${name} loaded successfully with ${result.meshes.length} meshes`);
             
-            // Setup collisions for imported meshes
-            result.meshes.forEach(mesh => {
-                if (mesh.name.includes('collision') || mesh.name.includes('wall')) {
+            // Setup collisions and materials for imported meshes
+            result.meshes.forEach((mesh, index) => {
+                if (mesh.name && mesh.geometry) {
+                    // Enable collision for all solid meshes
                     mesh.checkCollisions = true;
-                    mesh.isVisible = false;
-                } else {
-                    // Enable collisions for furniture
-                    mesh.checkCollisions = true;
-                    // Apply basic material if textures failed
-                    if (!mesh.material || mesh.material.diffuseTexture?.hasAlpha === undefined) {
-                        mesh.material = this.createPlaceholderMaterial();
+                    
+                    // Handle collision meshes (invisible but solid)
+                    if (mesh.name.toLowerCase().includes('collision')) {
+                        mesh.isVisible = false;
+                        mesh.checkCollisions = true;
+                    }
+                    // Handle walls, floors, ceilings
+                    else if (mesh.name.toLowerCase().includes('wall') || 
+                             mesh.name.toLowerCase().includes('floor') ||
+                             mesh.name.toLowerCase().includes('ceiling')) {
+                        mesh.checkCollisions = true;
+                        // Ensure material exists
+                        if (!mesh.material) {
+                            mesh.material = this.createHorrorMaterial(`${name}_${index}`);
+                        }
+                    }
+                    // Handle props and furniture
+                    else {
+                        mesh.checkCollisions = true;
+                        if (!mesh.material) {
+                            mesh.material = this.createPlaceholderMaterial();
+                        }
                     }
                 }
             });
@@ -114,14 +130,42 @@ export class AssetManager {
     }
     
     async loadCorridorModel() {
-        // Load the horror corridor GLB model
-        return await this.loadModel('horror_corridor1', 'horror_corridor_1.glb');
+        // Load the horror corridor GLB model with proper collision setup
+        try {
+            const result = await this.loadModel('horror_corridor1', 'horror_corridor_1.glb');
+            if (result && result.meshes) {
+                // Setup collision for corridor meshes
+                result.meshes.forEach(mesh => {
+                    if (mesh.name && mesh.geometry) {
+                        mesh.checkCollisions = true;
+                        // Make walls and floors solid
+                        if (mesh.name.toLowerCase().includes('wall') || 
+                            mesh.name.toLowerCase().includes('floor') ||
+                            mesh.name.toLowerCase().includes('ceiling')) {
+                            mesh.isPickable = false; // Not interactive but solid
+                        }
+                    }
+                });
+            }
+            return result;
+        } catch (error) {
+            console.error('Failed to load horror corridor model:', error);
+            return null;
+        }
     }
     
     createPlaceholderMaterial() {
         const material = new StandardMaterial('placeholder', this.scene);
         material.diffuseColor = new Color3(0.5, 0.5, 0.5);
         material.emissiveColor = new Color3(0.1, 0.1, 0.1);
+        return material;
+    }
+    
+    createHorrorMaterial(name) {
+        const material = new StandardMaterial(name, this.scene);
+        material.diffuseColor = new Color3(0.3, 0.35, 0.3);
+        material.specularColor = new Color3(0.05, 0.05, 0.05);
+        material.roughness = 0.8;
         return material;
     }
     

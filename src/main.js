@@ -45,10 +45,11 @@ class Game {
 	 * Also sets up event listeners to enhance the horror experience.
 	 */
 	async init() {
-		// Create scene
+		// Create scene with proper collision settings
 		this.scene = new Scene(this.engine);
 		this.scene.gravity = new Vector3(0, -9.81, 0);
 		this.scene.collisionsEnabled = true;
+		this.scene.workerCollisions = false; // Disable for better performance in browser
 
 		// Initialize systems
 		this.systems.assetManager = new AssetManager(this.scene);
@@ -216,20 +217,25 @@ class Game {
 	setupCamera() {
 		this.camera = new UniversalCamera(
 			"playerCamera",
-			new Vector3(0, 5, -5),
+			new Vector3(0, 4, -5),
 			this.scene
 		);
-		this.camera.setTarget(Vector3.Zero());
+		this.camera.setTarget(new Vector3(0, 4, 0));
 
 		// Camera settings for horror atmosphere
 		this.camera.fov = 0.8;
 		this.camera.minZ = 0.1;
 		this.camera.maxZ = 100;
 
-		// Enable collisions
+		// Enable collisions with proper settings
 		this.camera.checkCollisions = true;
 		this.camera.applyGravity = true;
-		this.camera.ellipsoid = new Vector3(0.5, 0.9, 0.5);
+		this.camera.ellipsoid = new Vector3(0.4, 0.9, 0.4);
+		this.camera.ellipsoidOffset = new Vector3(0, 0, 0);
+
+		// Movement settings
+		this.camera.speed = 0.5;
+		this.camera.angularSensibility = 2000;
 	}
 
 	update() {

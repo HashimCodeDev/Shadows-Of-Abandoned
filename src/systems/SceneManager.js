@@ -23,12 +23,29 @@ export class SceneManager {
 		// Define scene layouts and content
 		// Initial horror scene
 		this.sceneData.set("horror_scene", {
-			name: "Horror Scene",
-			playerStart: new Vector3(0, 5, 0),
+			name: "Horror Corridor",
+			playerStart: new Vector3(0, 4, -5),
 			environment: "horror_scene_glb",
 			lighting: "atmospheric",
-			interactables: [],
-			triggers: [],
+			interactables: [
+				{
+					type: "note",
+					position: new Vector3(1.5, 1, 10),
+					data: {
+						title: "Welcome to the Asylum",
+						content:
+							"You have entered the abandoned Blackwood Asylum. The shadows here hold dark secrets. Find the truth before it finds you.",
+					},
+				},
+			],
+			triggers: [
+				{
+					position: new Vector3(0, 0, 5),
+					radius: 2,
+					event: "entity_encounter",
+					data: { intensity: 1 },
+				},
+			],
 		});
 		this.sceneData.set("asylum_entrance", {
 			name: "Asylum Entrance",
@@ -311,96 +328,199 @@ export class SceneManager {
 	}
 
 	async loadHorrorSceneGLB() {
-		return new Promise((resolve, reject) => {
-			SceneLoader.Append(
+		try {
+			const result = await SceneLoader.ImportMeshAsync(
+				"",
 				"/assets/models/",
 				"horror_corridor_1.glb",
-				this.scene,
-				() => {
-					console.log("Horror scene GLB loaded");
-					this.scene.getEngine().hideLoadingUI();
-					resolve();
-				},
-				null,
-				(error) => {
-					console.error("Failed to load horror_scene.glb:", error);
-					this.scene.getEngine().hideLoadingUI();
-					reject(error);
-				}
+				this.scene
 			);
-		});
+			console.log(
+				"Horror corridor GLB loaded with",
+				result.meshes.length,
+				"meshes"
+			);
+
+			// Setup collision for all meshes
+			result.meshes.forEach((mesh, index) => {
+				if (mesh.name && mesh.geometry) {
+					mesh.checkCollisions = true;
+					console.log(
+						`✓ Collision enabled for mesh: ${
+							mesh.name
+						} (${mesh.getTotalVertices()} vertices)`
+					);
+
+					// Ensure proper material for visibility
+					if (!mesh.material) {
+						const material = new StandardMaterial(
+							`corridor_mat_${index}`,
+							this.scene
+						);
+						material.diffuseColor = new Color3(0.4, 0.4, 0.4);
+						material.specularColor = new Color3(0.1, 0.1, 0.1);
+						mesh.material = material;
+						console.log(`✓ Material applied to mesh: ${mesh.name}`);
+					}
+				}
+			});
+
+			// Position the corridor properly
+			if (result.meshes.length > 0) {
+				const rootMesh = result.meshes[0];
+				rootMesh.position = Vector3.Zero();
+				rootMesh.scaling = new Vector3(1, 1, 1);
+				console.log(`✓ Horror corridor positioned at:`, rootMesh.position);
+			}
+
+			// Add collision test markers (invisible in production)
+			this.addCollisionTestMarkers();
+
+			this.scene.getEngine().hideLoadingUI();
+			return result;
+		} catch (error) {
+			console.error("Failed to load horror_corridor_1.glb:", error);
+			// Fallback to procedural corridor
+			this.createFallbackCorridor();
+			this.scene.getEngine().hideLoadingUI();
+			throw error;
+		}
 	}
 
 	async createFullAsylum() {
-		// Create procedural asylum environment
-		this.createAsylumCorridor();
+		// Try to load GLB corridor first, fallback to procedural
+		try {
+			await this.loadHorrorSceneGLB();
+		} catch (error) {
+			console.warn("GLB loading failed, using procedural corridor");
+			this.createAsylumCorridor();
+		}
 		this.scene.getEngine().hideLoadingUI();
 	}
 
 	createAsylumCorridor() {
-		// Floor
+		// Enhanced horror corridor with proper collision
+		const corridorLength = 60;
+		const corridorWidth = 4;
+		const corridorHeight = 4;
+
+		// Floor with horror texture
 		const floor = MeshBuilder.CreateGround(
-			"floor",
-			{ width: 20, height: 100 },
+			"corridor_floor",
+			{ width: corridorWidth, height: corridorLength },
 			this.scene
 		);
-		floor.position.y = 0;
+		floor.position = new Vector3(0, 0, corridorLength / 2);
 		floor.checkCollisions = true;
 		const floorMaterial = new StandardMaterial("floorMaterial", this.scene);
-		floorMaterial.diffuseColor = new Color3(0.2, 0.2, 0.2);
+		floorMaterial.diffuseColor = new Color3(0.15, 0.15, 0.2);
+		floorMaterial.specularColor = new Color3(0.1, 0.1, 0.1);
 		floor.material = floorMaterial;
 
-		// Walls
-		for (let i = 0; i < 10; i++) {
-			const leftWall = MeshBuilder.CreateBox(
-				"leftWall" + i,
-				{ width: 1, height: 4, depth: 10 },
-				this.scene
-			);
-			leftWall.position = new Vector3(-10, 2, i * 10);
-			leftWall.checkCollisions = true;
-			const rightWall = MeshBuilder.CreateBox(
-				"rightWall" + i,
-				{ width: 1, height: 4, depth: 10 },
-				this.scene
-			);
-			rightWall.position = new Vector3(10, 2, i * 10);
-			rightWall.checkCollisions = true;
+		// Walls with proper collision
+		const wallMaterial = new StandardMaterial("wallMaterial", this.scene);
+		wallMaterial.diffuseColor = new Color3(0.3, 0.35, 0.3);
+		wallMaterial.specularColor = new Color3(0.05, 0.05, 0.05);
 
-			const wallMaterial = new StandardMaterial("wallMaterial" + i, this.scene);
-			wallMaterial.diffuseColor = new Color3(0.4, 0.4, 0.4);
-			leftWall.material = wallMaterial;
-			rightWall.material = wallMaterial;
-		}
+		// Left wall
+		const leftWall = MeshBuilder.CreateBox(
+			"leftWall",
+			{ width: 0.2, height: corridorHeight, depth: corridorLength },
+			this.scene
+		);
+		leftWall.position = new Vector3(
+			-corridorWidth / 2,
+			corridorHeight / 2,
+			corridorLength / 2
+		);
+		leftWall.checkCollisions = true;
+		leftWall.material = wallMaterial;
+
+		// Right wall
+		const rightWall = MeshBuilder.CreateBox(
+			"rightWall",
+			{ width: 0.2, height: corridorHeight, depth: corridorLength },
+			this.scene
+		);
+		rightWall.position = new Vector3(
+			corridorWidth / 2,
+			corridorHeight / 2,
+			corridorLength / 2
+		);
+		rightWall.checkCollisions = true;
+		rightWall.material = wallMaterial;
 
 		// Ceiling
 		const ceiling = MeshBuilder.CreateGround(
 			"ceiling",
-			{ width: 20, height: 100 },
+			{ width: corridorWidth, height: corridorLength },
 			this.scene
 		);
-		ceiling.position.y = 4;
-		ceiling.rotation.z = Math.PI;
+		ceiling.position = new Vector3(0, corridorHeight, corridorLength / 2);
+		ceiling.rotation.x = Math.PI;
 		const ceilingMaterial = new StandardMaterial("ceilingMaterial", this.scene);
-		ceilingMaterial.diffuseColor = new Color3(0.3, 0.3, 0.3);
+		ceilingMaterial.diffuseColor = new Color3(0.25, 0.25, 0.25);
 		ceiling.material = ceilingMaterial;
+
+		// Add doors and details
+		this.addCorridorDetails(corridorLength, corridorWidth, corridorHeight);
 	}
 
-	addHorrorCorridor() {
-		SceneLoader.Append(
-			"assets/models/",
-			"horror_corridor_1.glb",
-			this.scene,
-			() => {
-				console.log("Horror corridor loaded");
-				this.scene.getEngine().hideLoadingUI();
-			},
-			null,
-			(error) => {
-				console.error("Failed to load corridor:", error);
-				this.scene.getEngine().hideLoadingUI();
-			}
-		);
+	createFallbackCorridor() {
+		console.log("Creating fallback procedural corridor");
+		this.createAsylumCorridor();
+	}
+
+	addCorridorDetails(length, width, height) {
+		// Door frames and props
+		const doorMaterial = new StandardMaterial("doorMaterial", this.scene);
+		doorMaterial.diffuseColor = new Color3(0.4, 0.3, 0.2);
+
+		// Add doors every 8 units
+		for (let z = 8; z < length; z += 12) {
+			// Left door
+			const leftDoor = MeshBuilder.CreateBox(
+				`door_left_${z}`,
+				{ width: 1.5, height: 2.2, depth: 0.1 },
+				this.scene
+			);
+			leftDoor.position = new Vector3(-width / 2 + 0.1, height / 2 - 0.4, z);
+			leftDoor.material = doorMaterial;
+			leftDoor.checkCollisions = true;
+
+			// Right door
+			const rightDoor = MeshBuilder.CreateBox(
+				`door_right_${z}`,
+				{ width: 1.5, height: 2.2, depth: 0.1 },
+				this.scene
+			);
+			rightDoor.position = new Vector3(width / 2 - 0.1, height / 2 - 0.4, z);
+			rightDoor.material = doorMaterial;
+			rightDoor.checkCollisions = true;
+		}
+
+		// Add some debris and props
+		const debrisMaterial = new StandardMaterial("debrisMaterial", this.scene);
+		debrisMaterial.diffuseColor = new Color3(0.3, 0.2, 0.1);
+
+		for (let i = 0; i < 5; i++) {
+			const debris = MeshBuilder.CreateBox(
+				`debris_${i}`,
+				{
+					width: 0.5 + Math.random() * 0.5,
+					height: 0.2 + Math.random() * 0.3,
+					depth: 0.3 + Math.random() * 0.4,
+				},
+				this.scene
+			);
+			debris.position = new Vector3(
+				(Math.random() - 0.5) * (width - 1),
+				0.15,
+				Math.random() * length
+			);
+			debris.material = debrisMaterial;
+			debris.checkCollisions = true;
+		}
 	}
 
 	async createEntranceHall() {
@@ -687,6 +807,39 @@ export class SceneManager {
 
 		// Stop ambient sounds
 		this.systems.audioManager.stopAmbient("ambient_asylum");
+	}
+
+	getCurrentScene() {
+		return this.currentScene;
+	}
+
+	addCollisionTestMarkers() {
+		// Add invisible collision test boxes to verify collision detection
+		const testPositions = [
+			new Vector3(-2, 1, 5), // Left wall test
+			new Vector3(2, 1, 5), // Right wall test
+			new Vector3(0, 1, 10), // Center corridor test
+			new Vector3(0, 1, 20), // Far corridor test
+		];
+
+		testPositions.forEach((pos, index) => {
+			const testBox = MeshBuilder.CreateBox(
+				`collision_test_${index}`,
+				{ size: 0.2 },
+				this.scene
+			);
+			testBox.position.copyFrom(pos);
+			testBox.isVisible = false; // Hidden in production
+			testBox.checkCollisions = true;
+
+			// Make visible in debug mode (uncomment for testing)
+			// testBox.isVisible = true;
+			// const testMaterial = new StandardMaterial(`test_mat_${index}`, this.scene);
+			// testMaterial.diffuseColor = new Color3(1, 0, 0);
+			// testBox.material = testMaterial;
+		});
+
+		console.log(`✓ Added ${testPositions.length} collision test markers`);
 	}
 
 	getCurrentScene() {
