@@ -43,12 +43,12 @@ cd shadows-of-abandoned
 
 2. Install dependencies:
 ```bash
-npm install
+pnpm install
 ```
 
 3. Start the development server:
 ```bash
-npm run dev
+pnpm dev
 ```
 
 4. Open your browser to `http://localhost:3000`
@@ -56,7 +56,7 @@ npm run dev
 ### Building for Production
 
 ```bash
-npm run build
+pnpm build
 ```
 
 The built files will be in the `dist` directory.

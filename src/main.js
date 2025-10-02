@@ -58,9 +58,9 @@ class Game {
     }
     
     setupCamera() {
-        this.camera = new UniversalCamera('playerCamera', new Vector3(0, 1.8, -5), this.scene);
+        this.camera = new FreeCamera('playerCamera', new Vector3(0, 1.8, -5), this.scene);
         this.camera.setTarget(Vector3.Zero());
-        this.camera.attachToCanvas(this.canvas, true);
+        this.camera.attachControls(this.canvas, true);
         
         // Camera settings for horror atmosphere
         this.camera.fov = 0.8;

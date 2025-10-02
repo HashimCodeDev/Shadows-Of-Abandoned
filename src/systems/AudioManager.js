@@ -12,15 +12,8 @@ export class AudioManager {
     }
     
     async initializeAudio() {
-        // Load core audio files
-        await this.loadSound('ambient_asylum', 'ambient/asylum_drone.mp3', { loop: true, volume: 0.3 });
-        await this.loadSound('footstep_concrete', 'footsteps/concrete_step.mp3', { volume: 0.4 });
-        await this.loadSound('door_creak', 'interactions/door_creak.mp3', { volume: 0.6 });
-        await this.loadSound('key_pickup', 'interactions/key_pickup.mp3', { volume: 0.5 });
-        await this.loadSound('paper_rustle', 'interactions/paper_rustle.mp3', { volume: 0.4 });
-        await this.loadSound('stinger_1', 'stingers/horror_stinger_1.mp3', { volume: 0.8 });
-        await this.loadSound('whisper_1', 'entity/whisper_1.mp3', { volume: 0.6 });
-        await this.loadSound('flashlight_click', 'ui/flashlight_click.mp3', { volume: 0.3 });
+        // Audio files will be loaded on demand to avoid 404 errors
+        console.log('Audio system initialized - sounds will load on first use');
     }
     
     async loadSound(name, path, options = {}) {
@@ -43,7 +36,10 @@ export class AudioManager {
     
     playSound(name, options = {}) {
         const sound = this.sounds.get(name);
-        if (!sound || !this.isEnabled) return;
+        if (!sound || !this.isEnabled) {
+            console.log(`Sound ${name} not loaded or audio disabled`);
+            return;
+        }
         
         if (options.position) {
             sound.setPosition(options.position);
