@@ -7,8 +7,17 @@ export class LevelBuilder {
         this.meshes = [];
         this.lights = [];
         this.materials = new Map();
+        this.modelsLoaded = false;
         
         this.initializeMaterials();
+        this.loadModels();
+    }
+    
+    async loadModels() {
+        // Load the table GLTF model
+        await this.systems.assetManager.loadTableModel();
+        this.modelsLoaded = true;
+        console.log('GLTF models loaded successfully');
     }
     
     initializeMaterials() {
@@ -257,9 +266,8 @@ export class LevelBuilder {
     createEntranceProps(config) {
         const { position } = config;
         
-        // Reception desk
-        const desk = this.createProp('reception_desk', { width: 4, height: 1.2, depth: 1.5 }, 
-            new Vector3(position.x + 8, position.y + 0.6, position.z - 5), 'wood_old');
+        // Reception desk using table model
+        this.createTable(new Vector3(position.x + 8, position.y, position.z - 5));
         
         // Broken chairs
         for (let i = 0; i < 3; i++) {
@@ -294,9 +302,8 @@ export class LevelBuilder {
         const bed = this.createProp(`bed_${roomIndex}`, { width: 2, height: 0.6, depth: 1 },
             new Vector3(position.x + 2, position.y + 0.3, position.z + 1), 'metal_rusty');
         
-        // Nightstand
-        const nightstand = this.createProp(`nightstand_${roomIndex}`, { width: 0.6, height: 0.8, depth: 0.4 },
-            new Vector3(position.x + 3.2, position.y + 0.4, position.z + 1.5), 'wood_old');
+        // Nightstand using table model (scaled down)
+        this.createTable(new Vector3(position.x + 3.2, position.y, position.z + 1.5), null, new Vector3(0.5, 0.5, 0.5));
         
         // Sink (broken)
         const sink = this.createProp(`sink_${roomIndex}`, { width: 0.8, height: 0.9, depth: 0.5 },
@@ -309,10 +316,9 @@ export class LevelBuilder {
     createResearchProps(config) {
         const { position } = config;
         
-        // Research tables
+        // Research tables using GLTF model
         for (let i = 0; i < 4; i++) {
-            const table = this.createProp(`research_table_${i}`, { width: 3, height: 0.9, depth: 1.5 },
-                new Vector3(position.x - 8 + i * 5, position.y + 0.45, position.z + 5), 'metal_rusty');
+            this.createTable(new Vector3(position.x - 8 + i * 5, position.y, position.z + 5));
         }
         
         // Equipment cabinets
@@ -353,6 +359,23 @@ export class LevelBuilder {
         prop.checkCollisions = true;
         this.meshes.push(prop);
         return prop;
+    }
+    
+    createTable(position, rotation = null, scale = null) {
+        if (this.modelsLoaded) {
+            // Use GLTF table model
+            const tableInstance = this.systems.assetManager.createModelInstance('table', position, rotation, scale);
+            if (tableInstance) {
+                this.meshes.push(tableInstance);
+                return tableInstance;
+            }
+        }
+        
+        // Fallback to placeholder if model not loaded
+        const table = this.createProp(`table_${Date.now()}`, { width: 2, height: 0.8, depth: 1.2 }, position, 'wood_old');
+        if (rotation) table.rotation.copyFrom(rotation);
+        if (scale) table.scaling.copyFrom(scale);
+        return table;
     }
     
     createDebris(centerPos, count) {
